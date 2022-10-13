@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="index.css">
+<script src="https://unpkg.com/alpinejs" defer></script>
+<script>
+    let started=false;
+    function getAtrapados(){
+        return JSON.parse(localStorage.getItem('atrapados')||'[]');
+    }
+
+    document.addEventListener('alpine:init', () => {
+        // fetch('https://pokeapi.co/api/v2/pokemon/?limit=905')
+        fetch('https://pokeapi.co/api/v2/pokemon/?limit=50')
+            .then(res=>res.json())
+            .then(res=>{
+                Alpine.store('pokemones',res.results);
+                Alpine.store('atrapados',getAtrapados())
+                if(!started){
+                    Alpine.start();
+                    started=true;
+                }
+            });
+    });
+    function cambiarEstado(id,atrapado){
+        let atrapados=getAtrapados();
+        if(atrapado){
+            atrapados.push(id);
+        }else{
+            atrapados.splice(atrapados.indexOf(id),1);
+        }
+
+        Alpine.store('atrapados',atrapados);
+        localStorage.setItem('atrapados',JSON.stringify(atrapados));
+    }
+</script>
+
+<body x-data>
+    <header>
+        <h1>
+            <button><img src="https://gochecklists.app/images/home.svg" alt="Casa"></button>
+            <span>Dex</span>
+            <button><img src="https://gochecklists.app/images/settings.svg" alt="Configuración"></button>
+        </h1>
+        <div id="barra">
+            <div id="barra-contenido" :style="{width:$store.atrapados.length/$store.pokemones.length*100+'%', background:'hsl('+(($store.atrapados.length/$store.pokemones.length)*120)+' 90% 50%)'}"></div>
+        </div>
+    </header>
+    <template x-for="(pok,id) in $store.pokemones">
+        <label class="pokemon" >
+            <span x-text="pok.name[0].toUpperCase()+pok.name.substring(1)"></span>
+            <input @input="cambiarEstado($el.value,$el.checked)" type="checkbox" x-bind:checked="$store.atrapados.includes(''+(id+1))" x-bind:value="id+1">
+            <img x-bind:src="'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/'+(id+1)+'.png'" x-bind:alt="'Imagen de un '+pok.name">
+        </div>
+    </template>
+</body>
