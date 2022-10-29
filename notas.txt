@@ -1,0 +1,5 @@
+Los compoentes son pagos
+
+Alpine no tiene routeo
+Hay un alpine router pero solo funciona con Alpine 2. https://npm.io/package/alpinejs-router
+Ofrece page.js como alternativa https://github.com/pinecone-router/router/issues/12#issuecomment-886327242

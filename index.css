@@ -2,6 +2,20 @@ body{
     font-family: Varela,"Segoe UI","Helvetica Neue",Arial;
     margin: 0;
 }
+body > div{
+    text-align: center;
+
+    display: none;
+}
+body > div.not-hidden{
+    display: block !important;
+}
+#main{
+    text-align:left;
+}
+a{
+    font-size: 1.25em;
+}
 .pokemon{
     display: inline-grid;
     cursor: pointer;
@@ -24,11 +38,20 @@ body{
     grid-area: c;
 }
 
+.main h1>button,.main #barra{
+    display: none;
+}
 header{
     position: sticky;top:0;
     background:white;
     z-index: 1;
     padding-bottom: 0.2rem;
+
+    display: grid;grid-template: "a a" "b c" / 1fr;
+}
+header > span{
+    margin: auto;
+    margin-right: .5rem;
 }
 h1{
     display: flex;
@@ -40,6 +63,8 @@ h1{
     padding: 0px;
     font-size: 1.5em;
     text-align: center;
+
+    grid-area: a;
 }
 h1 > span{
     flex-grow: 2;

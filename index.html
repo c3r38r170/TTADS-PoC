@@ -1,53 +1,172 @@
 <link rel="stylesheet" href="index.css">
 <script src="https://unpkg.com/alpinejs" defer></script>
+<script src="https://unpkg.com/page/page.js"></script>
+<!-- <script type="module"> -->
 <script>
+
     let started=false;
+    let pagina='Dex';
     function getAtrapados(){
-        return JSON.parse(localStorage.getItem('atrapados')||'[]');
+        return JSON.parse(localStorage.getItem('atrapados')||'{"Dex":[],"Shiny":[],"Unown":[]}');
     }
 
-    document.addEventListener('alpine:init', () => {
-        // fetch('https://pokeapi.co/api/v2/pokemon/?limit=905')
-        fetch('https://pokeapi.co/api/v2/pokemon/?limit=50')
-            .then(res=>res.json())
-            .then(res=>{
-                Alpine.store('pokemones',res.results);
-                Alpine.store('atrapados',getAtrapados())
-                if(!started){
-                    Alpine.start();
-                    started=true;
-                }
+    let cantidadDePokemones=60;
+    // fetch('https://pokeapi.co/api/v2/pokemon/?limit=905')
+    fetch('https://pokeapi.co/api/v2/pokemon/?limit='+cantidadDePokemones)
+        .then(res=>res.json())
+        .then(res=>{
+            console.log(res.results);
+            let todos=res.results.map(pok=>{
+                pok.name=pok.name
+                    .replace('-f',' ♀')
+                    .replace('-m',' ♂');
+                return pok;
             });
-    });
-    function cambiarEstado(id,atrapado){
+            Alpine.store('pokemonesDex',todos);
+            Alpine.store('pokemonesShiny',todos);
+            Alpine.store('title','Dex');
+            Alpine.store('atrapados',getAtrapados())
+            fetch('https://pokeapi.co/api/v2/pokemon/201')
+                .then(res=>res.json())
+                .then(unowns=>{
+                    let unown=[];
+                    for(let uno of unowns.forms){
+                        let letra=uno.name.split('-')[1];
+                        let id='-'+letra;
+                        let name=letra.toUpperCase();
+                        switch(letra){
+                        case 'a':
+                            id='';
+                            break;
+                        case 'exclamation':
+                            name='!';
+                            break;
+                        case 'question':
+                            name='?';
+                            break;
+                        }
+                        unown.push({id,name});
+                    }
+                    // console.log(unown,unowns);
+                    Alpine.store('pokemonesUnown',unown);
+                    if(!started){
+                        Alpine.start();
+                        started=true;
+                    }
+                })
+        });
+    // Alpine.start();
+    function cambiarEstado(id,atrapado,coleccion){
         let atrapados=getAtrapados();
         if(atrapado){
-            atrapados.push(id);
+            atrapados[coleccion].push(id);
         }else{
-            atrapados.splice(atrapados.indexOf(id),1);
+            atrapados[coleccion].splice(atrapados[coleccion].indexOf(id),1);
         }
 
         Alpine.store('atrapados',atrapados);
         localStorage.setItem('atrapados',JSON.stringify(atrapados));
     }
+
+    page.configure({window:window})
+
+    function mostrarSeccion(id){
+        let viejo=document.querySelector('.not-hidden');
+        viejo.classList.remove('not-hidden');
+        document.getElementById(id).classList.add('not-hidden');
+        document.body.classList.remove('main');
+    }
+
+    page('/', ()=>{
+        mostrarSeccion('main');
+        document.body.classList.add('main');
+    })
+
+    page('/dex', ()=>{
+        pagina='Dex';
+        mostrarSeccion('dex');
+    })
+
+    page('/shiny', ()=>{
+        pagina='Shiny';
+        mostrarSeccion('shiny');
+    })
+
+    page('/unown', ()=>{
+        pagina='Unown';
+        mostrarSeccion('unown');
+    })
+
+    window.page=page; 
 </script>
 
-<body x-data>
+<body x-data class="main">
     <header>
         <h1>
-            <button><img src="https://gochecklists.app/images/home.svg" alt="Casa"></button>
-            <span>Dex</span>
-            <button><img src="https://gochecklists.app/images/settings.svg" alt="Configuración"></button>
+            <button><a href="/"><img src="https://gochecklists.app/images/home.svg" alt="Casa"></a></button>
+            <span x-text="$store.title"></span>
+            <!-- <button><img src="https://gochecklists.app/images/settings.svg" alt="Configuración"></button> -->
         </h1>
         <div id="barra">
-            <div id="barra-contenido" :style="{width:$store.atrapados.length/$store.pokemones.length*100+'%', background:'hsl('+(($store.atrapados.length/$store.pokemones.length)*120)+' 90% 50%)'}"></div>
+            <div id="barra-contenido" :style="{width:$store.atrapados[pagina].length/$store['pokemones'+pagina].length*100+'%', background:'hsl('+(($store.atrapados[pagina].length/$store['pokemones'+pagina].length)*120)+' 90% 50%)'}"></div>
         </div>
+        <span x-text="''+$store.atrapados[pagina].length+' / '+$store['pokemones'+pagina].length"></span>
     </header>
-    <template x-for="(pok,id) in $store.pokemones">
-        <label class="pokemon" >
-            <span x-text="pok.name[0].toUpperCase()+pok.name.substring(1)"></span>
-            <input @input="cambiarEstado($el.value,$el.checked)" type="checkbox" x-bind:checked="$store.atrapados.includes(''+(id+1))" x-bind:value="id+1">
-            <img x-bind:src="'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/'+(id+1)+'.png'" x-bind:alt="'Imagen de un '+pok.name">
-        </div>
-    </template>
+    <div id="main" class="not-hidden">
+        <!-- TODO links y eso -->
+        <ul>
+            <li>
+                <a href="/dex">Dex</a>
+                <ul>
+                    <li>Track your main Pokédex completion in Pokémon GO.</li>
+                </ul>
+            </li>
+            <li>
+                <a href="/shiny">ShinyDex</a>
+                <ul>
+                    <li>Track which of the available shinies you’ve caught.</li>
+                </ul>
+            </li>
+            <li>
+                <a href="/unown">UnownDex</a>
+                <ul>
+                    <li>Track how many Unown you own.</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+    <div id="dex">
+        <template x-for="(pok,id) in $store.pokemonesDex">
+            <label class="pokemon" >
+                <span x-text="pok.name[0].toUpperCase()+pok.name.substring(1)"></span>
+                <input @input="cambiarEstado($el.value,$el.checked,'Dex')" type="checkbox" x-bind:checked="$store.atrapados.Dex.includes(''+(id+1))" x-bind:value="id+1">
+                <img x-bind:src="'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/'+(id+1)+'.png'" x-bind:alt="'Imagen de un '+pok.name">
+            </div>
+        </template>
+    </div>
+    <div id="shiny">
+        <template x-for="(pok,id) in $store.pokemonesShiny">
+            <label class="pokemon" >
+                <span x-text="pok.name[0].toUpperCase()+pok.name.substring(1)"></span>
+                <input @input="cambiarEstado($el.value,$el.checked,'Shiny')" type="checkbox" x-bind:checked="$store.atrapados.Shiny.includes(''+(id+1))" x-bind:value="id+1">
+                <img
+                    x-bind:src="'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/'+(id+1)+'.png'"
+                    x-bind:alt="'Imagen de un '+pok.name+' shiny'"
+                    onerror="this.closest('.pokemon').remove();"
+                >
+            </div>
+        </template>
+    </div>
+    <div id="unown">
+        <template x-for="pok in $store.pokemonesUnown">
+            <label class="pokemon" >
+                <span x-text="pok.name"></span>
+                <input @input="cambiarEstado($el.value,$el.checked,'Unown')" type="checkbox" x-bind:checked="$store.atrapados.Unown.includes(pok.id)" x-bind:value="pok.id">
+                <img
+                    x-bind:src="'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/201'+(pok.id)+'.png'"
+                    x-bind:alt="'Imagen de un unown '+pok.name"
+                >
+            </div>
+        </template>
+    </div>
 </body>
